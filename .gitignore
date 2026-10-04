@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# 개인 금융 데이터 — 절대 커밋 금지
+*.db
+*.sqlite3
+data/private/
+uploads/
+*.xlsx
+!data/sample_*.xlsx

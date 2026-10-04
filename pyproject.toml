@@ -1,0 +1,17 @@
+[project]
+name = "smart-ledger"
+version = "0.0.1"
+description = "스마트 가계부 관리 시스템"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
