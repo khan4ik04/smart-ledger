@@ -2,7 +2,6 @@
 
 입력 df는 db.get_transactions()의 결과 형식을 따른다.
 
-TODO(담당: 분석·시각화)
 """
 
 from __future__ import annotations
@@ -12,7 +11,9 @@ import pandas as pd
 
 def summary(df: pd.DataFrame) -> dict[str, int]:
     """{'income': 총수입, 'expense': 총지출(양수), 'balance': 수입-지출}을 반환한다."""
-    raise NotImplementedError("TODO(분석·시각화): summary 구현")
+    income = int(df.loc[df["amount"] > 0, "amount"].sum())
+    expense = int(-df.loc[df["amount"] < 0, "amount"].sum())
+    return {"income": income, "expense": expense, "balance": income - expense}
 
 
 def by_category(df: pd.DataFrame) -> pd.DataFrame:
