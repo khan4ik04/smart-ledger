@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 """통계 계산과 차트.
 
 입력 df는 db.get_transactions()의 결과 형식을 따른다.
@@ -39,9 +40,50 @@ def by_month(df: pd.DataFrame) -> pd.DataFrame:
 
 def category_pie(df: pd.DataFrame):
     """카테고리별 지출 비율 원형 차트 (plotly Figure)."""
-    raise NotImplementedError("TODO(분석·시각화): category_pie 구현")
+    import plotly.express as px
+
+    data = by_category(df)
+    fig = px.pie(data, names="category", values="total", title="카테고리별 지출 비율")
+    fig.update_traces(
+        textinfo="label+percent",
+        hovertemplate="%{label}<br>%{value:,.0f}원 (%{percent})<extra></extra>",
+    )
+    fig.update_layout(legend_title_text="카테고리")
+    if data.empty:
+        fig.add_annotation(
+            text="지출 내역이 없습니다.",
+            x=0.5,
+            y=0.5,
+            xref="paper",
+            yref="paper",
+            showarrow=False,
+        )
+    return fig
 
 
 def monthly_line(df: pd.DataFrame):
     """월별 지출 추이 선 그래프 (plotly Figure)."""
-    raise NotImplementedError("TODO(분석·시각화): monthly_line 구현")
+    import plotly.express as px
+
+    data = by_month(df)
+    fig = px.line(
+        data,
+        x="month",
+        y="expense",
+        markers=True,
+        title="월별 지출 추이",
+        labels={"month": "월", "expense": "지출 (원)"},
+    )
+    fig.update_traces(hovertemplate="%{x}<br>%{y:,.0f}원<extra></extra>")
+    fig.update_xaxes(type="category")
+    fig.update_yaxes(rangemode="tozero", tickformat=",")
+    if data.empty:
+        fig.add_annotation(
+            text="거래 내역이 없습니다.",
+            x=0.5,
+            y=0.5,
+            xref="paper",
+            yref="paper",
+            showarrow=False,
+        )
+    return fig

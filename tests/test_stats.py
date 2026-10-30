@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 import pandas as pd
 import pytest
 
@@ -90,4 +91,47 @@ def test_statistics_do_not_change_input(transactions):
     stats.summary(transactions)
     stats.by_category(transactions)
     stats.by_month(transactions)
+    pd.testing.assert_frame_equal(transactions, before)
+
+
+def test_category_pie_chart_uses_expense_totals(transactions):
+    fig = stats.category_pie(transactions)
+    trace = fig.data[0]
+    assert trace.type == "pie"
+    assert list(trace.labels) == ["식비", "카페"]
+    assert list(trace.values) == [12000, 5000]
+
+
+def test_monthly_line_chart_uses_sorted_expenses(transactions):
+    fig = stats.monthly_line(transactions)
+    trace = fig.data[0]
+    assert trace.type == "scatter"
+    assert trace.mode == "lines+markers"
+    assert list(trace.x) == ["2025-12", "2026-01", "2026-02"]
+    assert list(trace.y) == [10000, 7000, 0]
+
+
+@pytest.mark.parametrize("amounts", [[], [1000], [0]])
+def test_charts_handle_no_expenses(amounts):
+    df = pd.DataFrame(
+        {
+            "date": ["2026-09-01"] * len(amounts),
+            "amount": amounts,
+            "category": ["급여"] * len(amounts),
+        }
+    )
+    pie = stats.category_pie(df)
+    line = stats.monthly_line(df)
+    assert sum(len(trace.values) for trace in pie.data) == 0
+    assert pie.layout.annotations[0].text == "지출 내역이 없습니다."
+    if df.empty:
+        assert line.layout.annotations[0].text == "거래 내역이 없습니다."
+    else:
+        assert list(line.data[0].y) == [0]
+
+
+def test_charts_do_not_change_input(transactions):
+    before = transactions.copy(deep=True)
+    stats.category_pie(transactions)
+    stats.monthly_line(transactions)
     pd.testing.assert_frame_equal(transactions, before)
