@@ -8,7 +8,6 @@ from typing import BinaryIO
 
 import pandas as pd
 
-
 REQUIRED_COLUMNS = ["date", "description", "amount"]
 
 COLUMN_ALIASES = {
@@ -58,6 +57,7 @@ def _clean_amount(value) -> int:
         return 0
 
     text = str(value).strip()
+
     negative = text.startswith("-") or (
         text.startswith("(") and text.endswith(")")
     )
@@ -78,7 +78,10 @@ def _clean_amount(value) -> int:
     return -amount if negative else amount
 
 
-def _find_column(df: pd.DataFrame, names: list[str]):
+def _find_column(
+    df: pd.DataFrame,
+    names: list[str],
+) -> str | None:
     """컬럼 이름을 비교하여 해당 컬럼을 찾는다."""
 
     normalized = {
@@ -104,33 +107,62 @@ def load_file(
     elif isinstance(source, (str, Path)):
         extension = Path(source).suffix.lower()
     else:
-        extension = Path(getattr(source, "name", "")).suffix.lower()
+        extension = Path(
+            getattr(source, "name", "")
+        ).suffix.lower()
 
     if extension == ".csv":
         try:
-            df = pd.read_csv(source, encoding="utf-8-sig")
+            df = pd.read_csv(
+                source,
+                encoding="utf-8-sig",
+            )
         except UnicodeDecodeError:
             if hasattr(source, "seek"):
                 source.seek(0)
-            df = pd.read_csv(source, encoding="cp949")
+
+            df = pd.read_csv(
+                source,
+                encoding="cp949",
+            )
 
     elif extension in [".xlsx", ".xls"]:
         df = pd.read_excel(source)
 
     else:
-        raise ValueError("CSV 또는 Excel 파일만 지원합니다.")
+        raise ValueError(
+            "CSV 또는 Excel 파일만 지원합니다."
+        )
 
-    date_col = _find_column(df, COLUMN_ALIASES["date"])
+    date_col = _find_column(
+        df,
+        COLUMN_ALIASES["date"],
+    )
+
     description_col = _find_column(
-        df, COLUMN_ALIASES["description"]
+        df,
+        COLUMN_ALIASES["description"],
     )
 
     if date_col is None or description_col is None:
-        raise ValueError("날짜 또는 거래내용 컬럼을 찾을 수 없습니다.")
+        raise ValueError(
+            "날짜 또는 거래내용 컬럼을 찾을 수 없습니다."
+        )
 
-    amount_col = _find_column(df, COLUMN_ALIASES["amount"])
-    deposit_col = _find_column(df, COLUMN_ALIASES["deposit"])
-    withdrawal_col = _find_column(df, COLUMN_ALIASES["withdrawal"])
+    amount_col = _find_column(
+        df,
+        COLUMN_ALIASES["amount"],
+    )
+
+    deposit_col = _find_column(
+        df,
+        COLUMN_ALIASES["deposit"],
+    )
+
+    withdrawal_col = _find_column(
+        df,
+        COLUMN_ALIASES["withdrawal"],
+    )
 
     if amount_col is not None:
         amount = df[amount_col].apply(_clean_amount)
@@ -151,15 +183,26 @@ def load_file(
         amount = deposit - withdrawal
 
     else:
-        raise ValueError("금액 컬럼을 찾을 수 없습니다.")
+        raise ValueError(
+            "금액 컬럼을 찾을 수 없습니다."
+        )
 
-    memo_col = _find_column(df, COLUMN_ALIASES["memo"])
+    memo_col = _find_column(
+        df,
+        COLUMN_ALIASES["memo"],
+    )
 
     result = pd.DataFrame({
         "date": pd.to_datetime(
-            df[date_col], errors="coerce"
+            df[date_col],
+            errors="coerce",
         ).dt.strftime("%Y-%m-%d"),
-        "description": df[description_col].fillna("").astype(str).str.strip(),
+        "description": (
+            df[description_col]
+            .fillna("")
+            .astype(str)
+            .str.strip()
+        ),
         "amount": amount,
     })
 
@@ -196,8 +239,10 @@ def remove_duplicates(
                 existing["date"].astype(str),
                 existing["description"].astype(str),
                 pd.to_numeric(
-                    existing["amount"], errors="coerce"
+                    existing["amount"],
+                    errors="coerce",
                 ).fillna(0),
+                strict=True,
             )
         )
 
@@ -206,8 +251,10 @@ def remove_duplicates(
                 result["date"].astype(str),
                 result["description"].astype(str),
                 pd.to_numeric(
-                    result["amount"], errors="coerce"
+                    result["amount"],
+                    errors="coerce",
                 ).fillna(0),
+                strict=True,
             )
         )
 
