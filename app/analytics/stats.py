@@ -18,12 +18,23 @@ def summary(df: pd.DataFrame) -> dict[str, int]:
 
 def by_category(df: pd.DataFrame) -> pd.DataFrame:
     """지출만 카테고리별로 합산. 열: category, total(양수), ratio(0~1). total 내림차순."""
-    raise NotImplementedError("TODO(분석·시각화): by_category 구현")
+    expenses = df.loc[df["amount"] < 0]
+    result = expenses.groupby("category")["amount"].sum().mul(-1).rename("total").reset_index()
+    result = result.sort_values("total", ascending=False, kind="stable").reset_index(drop=True)
+    if result.empty:
+        result["ratio"] = pd.Series(dtype=float)
+    else:
+        result["ratio"] = result["total"] / result["total"].sum()
+    return result
 
 
 def by_month(df: pd.DataFrame) -> pd.DataFrame:
     """월별 합계. 열: month('YYYY-MM'), income, expense(양수)."""
-    raise NotImplementedError("TODO(분석·시각화): by_month 구현")
+    data = df[["date", "amount"]].copy()
+    data["month"] = pd.to_datetime(data["date"]).dt.strftime("%Y-%m")
+    data["income"] = data["amount"].clip(lower=0)
+    data["expense"] = -data["amount"].clip(upper=0)
+    return data.groupby("month", as_index=False)[["income", "expense"]].sum()
 
 
 def category_pie(df: pd.DataFrame):
