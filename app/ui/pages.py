@@ -16,6 +16,137 @@ import streamlit as st
 from app import db
 
 
+# Visual layer only. All calculations and database operations remain unchanged.
+_THEME_CSS = """
+<style>
+/* Smart Ledger — subtle midnight / indigo theme */
+:root {
+  --sl-accent: #9098ff;
+  --sl-border: rgba(150, 164, 205, 0.16);
+  --sl-panel: rgba(31, 38, 57, 0.76);
+  --sl-text-muted: #aebbd0;
+}
+
+[data-testid="stAppViewContainer"] {
+  background:
+    radial-gradient(ellipse 55% 33% at 80% -8%, rgba(96, 104, 205, 0.16), transparent),
+    #0e1118;
+}
+[data-testid="stSidebar"] {
+  background: linear-gradient(175deg, #1b2030 0%, #131824 100%);
+  border-right: 1px solid var(--sl-border);
+}
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h1,
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h2 {
+  letter-spacing: -0.02em;
+}
+[data-testid="stSidebar"] [role="radiogroup"] label {
+  border-radius: 10px;
+  padding: 0.28rem 0.45rem;
+  transition: background 0.15s ease;
+}
+[data-testid="stSidebar"] [role="radiogroup"] label:hover {
+  background: rgba(144, 152, 255, 0.10);
+}
+
+/* Give the page a clear hierarchy without enlarging it too much. */
+[data-testid="stMainBlockContainer"] {
+  padding-top: 2.65rem;
+  max-width: 1120px;
+}
+h1 { font-weight: 780 !important; letter-spacing: -0.045em !important; }
+h2, h3 { letter-spacing: -0.025em !important; }
+[data-testid="stCaptionContainer"] { color: var(--sl-text-muted); }
+hr { border-color: var(--sl-border) !important; }
+
+/* Summary tiles */
+[data-testid="stMetric"] {
+  background: var(--sl-panel);
+  border: 1px solid var(--sl-border);
+  border-radius: 16px;
+  padding: 17px 19px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+}
+[data-testid="stMetricLabel"] { color: #aebbd0; }
+[data-testid="stMetricValue"] {
+  font-size: clamp(1.35rem, 2.45vw, 2.15rem);
+  font-weight: 740;
+  letter-spacing: -0.035em;
+}
+
+/* Input surfaces */
+[data-testid="stForm"] {
+  background: rgba(30, 36, 52, 0.46);
+  border: 1px solid rgba(144, 152, 255, 0.22);
+  border-radius: 18px;
+  padding: 22px 20px 12px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.10);
+}
+[data-testid="stTextInput"] input,
+[data-testid="stNumberInput"] input,
+[data-testid="stDateInput"] input,
+[data-testid="stSelectbox"] [data-baseweb="select"] {
+  border-radius: 10px;
+}
+[data-testid="stFormSubmitButton"] button[kind="primary"],
+button[kind="primary"] {
+  background: linear-gradient(110deg, #6574eb, #8c78d5);
+  border: 0;
+  border-radius: 10px;
+  font-weight: 680;
+  box-shadow: 0 4px 15px rgba(109, 113, 227, 0.16);
+}
+[data-testid="stFormSubmitButton"] button[kind="primary"]:hover,
+button[kind="primary"]:hover {
+  background: linear-gradient(110deg, #7583f4, #9985e4);
+  border: 0;
+}
+[data-testid="stDataFrame"] {
+  border: 1px solid var(--sl-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+[data-testid="stExpander"] {
+  border-radius: 12px;
+  border-color: var(--sl-border);
+}
+[data-testid="stAlert"] { border-radius: 12px; }
+
+/* Small, understated page eyebrow */
+.sl-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #a7afff;
+  margin: 0 0 0.4rem;
+}
+.sl-eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 9px;
+  background: #a7afff;
+  border-radius: 50%;
+}
+@media (max-width: 720px) {
+  [data-testid="stMainBlockContainer"] { padding-top: 1.1rem; }
+  [data-testid="stForm"] { padding: 14px 12px 8px; }
+  [data-testid="stMetric"] { padding: 12px; }
+}
+</style>
+"""
+
+
+def _page_style() -> None:
+    """Apply global visual tweaks without touching backend/business logic."""
+    st.markdown(_THEME_CSS, unsafe_allow_html=True)
+    st.markdown('<div class="sl-eyebrow">SMART LEDGER / PERSONAL FINANCE</div>', unsafe_allow_html=True)
+
+
 def _not_ready(name: str) -> None:
     st.info(f"'{name}' 기능은 준비 중입니다.")
 
@@ -61,8 +192,9 @@ def _display_table(frame: pd.DataFrame) -> None:
 
 
 def dashboard(conn: sqlite3.Connection) -> None:
+    _page_style()
     st.title("💰 스마트 가계부")
-    st.caption("수입과 지출을 한눈에 확인하는 개인 가계부")
+    st.caption("한눈에 확인하는 수입 · 지출 · 잔액")
     df = db.get_transactions(conn)
     if df.empty:
         st.info("아직 거래 내역이 없습니다. 왼쪽 '내역 입력'에서 첫 거래를 추가해 보세요.")
@@ -90,8 +222,9 @@ def dashboard(conn: sqlite3.Connection) -> None:
 
 
 def add_entry(conn: sqlite3.Connection) -> None:
+    _page_style()
     st.title("➕ 내역 입력")
-    st.caption("거래를 추가하면 SQLite에 저장되며 내역 조회 화면에도 표시됩니다.")
+    st.caption("새 거래를 입력하면 내역 조회와 대시보드에 바로 반영됩니다.")
 
     with st.form("add_transaction", clear_on_submit=True):
         col1, col2 = st.columns(2)
@@ -103,7 +236,7 @@ def add_entry(conn: sqlite3.Connection) -> None:
             description = st.text_input("내용 / 가맹점명", placeholder="예: 스타벅스")
             category = st.text_input("카테고리", value="미분류")
             memo = st.text_input("메모 (선택)")
-        submitted = st.form_submit_button("거래 저장", type="primary")
+        submitted = st.form_submit_button("거래 저장  →", type="primary")
 
     if submitted:
         if not description.strip():
@@ -185,6 +318,7 @@ def _edit_or_delete(conn: sqlite3.Connection, frame: pd.DataFrame) -> None:
 
 
 def history(conn: sqlite3.Connection) -> None:
+    _page_style()
     st.title("📋 내역 조회")
     notice = st.session_state.pop("ui_notice", None)
     if notice:
@@ -234,6 +368,7 @@ def history(conn: sqlite3.Connection) -> None:
 
 
 def import_file(conn: sqlite3.Connection) -> None:
+    _page_style()
     st.title("📁 파일 가져오기")
     st.caption("팀 테스트에는 실제 계좌 내역이 아닌 가짜 CSV 파일만 사용하세요.")
     uploaded = st.file_uploader("CSV / Excel 파일", type=["csv", "xlsx"])
@@ -258,6 +393,7 @@ def import_file(conn: sqlite3.Connection) -> None:
 
 
 def statistics(conn: sqlite3.Connection) -> None:
+    _page_style()
     st.title("📈 통계")
     df = db.get_transactions(conn)
     if df.empty:
@@ -284,5 +420,6 @@ def statistics(conn: sqlite3.Connection) -> None:
 
 
 def budgets(conn: sqlite3.Connection) -> None:
+    _page_style()
     st.title("🎯 예산 설정")
     _not_ready("예산 설정")
