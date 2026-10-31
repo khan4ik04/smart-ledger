@@ -13,7 +13,8 @@ from pathlib import Path
 
 import pandas as pd
 
-DEFAULT_DB_PATH = Path("ledger.db")
+# 실행 위치와 상관없이 항상 프로젝트 루트의 ledger.db를 사용한다.
+DEFAULT_DB_PATH = Path(__file__).resolve().parents[2] / "ledger.db"
 
 TRANSACTION_COLUMNS = ["id", "date", "description", "amount", "category", "memo"]
 
