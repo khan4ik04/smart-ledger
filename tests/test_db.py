@@ -84,3 +84,10 @@ def test_budgets(conn):
 def test_negative_budget_rejected(conn):
     with pytest.raises(ValueError):
         db.set_budget(conn, "카페", "2026-09", -1)
+
+
+def test_default_db_path_is_project_root():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    assert db.database.DEFAULT_DB_PATH == root / "ledger.db"

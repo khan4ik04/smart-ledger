@@ -27,7 +27,7 @@ pip install -r requirements-dev.txt
    test: categorizer 테스트 추가
    refactor: / chore:
    ```
-5. **PR 생성** — 대상 브랜치는 `dev`. 본문에 `Closes #이슈번호`. 팀원 1명 이상 승인 + CI 통과 후 **Squash and merge**.
+5. **PR 생성** — 대상 브랜치는 `dev`. 본문에 `Closes #이슈번호`. 팀원 1명 이상 승인 + CI 통과 후 **Merge pull request**.
 6. 리뷰 요청을 받으면 **48시간 이내**에 리뷰합니다.
 
 ## 규칙

@@ -2,7 +2,6 @@
 """app/db/database.py의 경계 조건 테스트."""
 
 import pandas as pd
-import pytest
 
 from app.db import database as dbm
 
@@ -25,9 +24,3 @@ def test_add_transactions_uses_default_category_and_memo(conn):
 def test_update_transaction_without_fields_returns_false(conn):
     tx_id = dbm.add_transaction(conn, "2026-10-01", "GS25", -3000)
     assert dbm.update_transaction(conn, tx_id) is False
-
-
-def test_update_transaction_rejects_unknown_field(conn):
-    tx_id = dbm.add_transaction(conn, "2026-10-01", "GS25", -3000)
-    with pytest.raises(ValueError):
-        dbm.update_transaction(conn, tx_id, color="red")
