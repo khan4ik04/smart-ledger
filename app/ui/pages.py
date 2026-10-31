@@ -158,6 +158,8 @@ def _try(name: str, fn: Callable[[], None]) -> None:
         fn()
     except NotImplementedError:
         _not_ready(name)
+    except ValueError as exc:
+        st.error(f"{name} 오류: {exc}")
 
 
 def _money(value: int) -> str:
@@ -189,7 +191,7 @@ def _display_table(frame: pd.DataFrame) -> None:
         }
     )
     columns = ["번호", "날짜", "구분", "내용", "금액 (원)", "카테고리", "메모"]
-    st.dataframe(view[columns], use_container_width=True, hide_index=True)
+    st.dataframe(view[columns], width="stretch", hide_index=True)
 
 
 def dashboard(conn: sqlite3.Connection) -> None:
@@ -212,7 +214,7 @@ def dashboard(conn: sqlite3.Connection) -> None:
 
         st.subheader("📊 카테고리별 지출")
         if (df["amount"] < 0).any():
-            st.plotly_chart(stats.category_pie(df), use_container_width=True)
+            st.plotly_chart(stats.category_pie(df), width="stretch")
         else:
             st.info("아직 지출 내역이 없어 그래프를 표시할 수 없습니다.")
 
@@ -236,6 +238,7 @@ def add_entry(conn: sqlite3.Connection) -> None:
         with col2:
             description = st.text_input("내용 / 가맹점명", placeholder="예: 스타벅스")
             category = st.text_input("카테고리", value="미분류")
+            auto_category = st.checkbox("카테고리 자동 분류 (지출에만 적용)", value=True)
             memo = st.text_input("메모 (선택)")
         submitted = st.form_submit_button("거래 저장  →", type="primary")
 
@@ -248,12 +251,23 @@ def add_entry(conn: sqlite3.Connection) -> None:
             except ValueError as exc:
                 st.error(str(exc))
             else:
+                chosen_category = category.strip() or "미분류"
+                if kind == "지출" and auto_category and chosen_category == "미분류":
+                    from app.importer import categorizer
+
+                    try:
+                        chosen_category = (
+                            categorizer.categorize(description.strip(), categorizer.load_rules())
+                            or "미분류"
+                        )
+                    except (OSError, ValueError) as exc:
+                        st.warning(f"자동 분류를 적용하지 못했습니다: {exc}")
                 tx_id = db.add_transaction(
                     conn,
                     date.isoformat(),
                     description.strip(),
                     signed_amount,
-                    category.strip() or "미분류",
+                    chosen_category,
                     memo.strip(),
                 )
                 st.success(f"거래가 저장되었습니다. (번호: {tx_id})")
@@ -390,7 +404,7 @@ def import_file(conn: sqlite3.Connection) -> None:
         if df.empty:
             st.info("새로 가져올 거래가 없습니다.")
             return
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.dataframe(df, width="stretch", hide_index=True)
         if st.button(f"{len(df)}건 저장"):
             count = db.add_transactions(conn, df)
             st.success(f"{count}건 저장했습니다.")
@@ -415,10 +429,10 @@ def statistics(conn: sqlite3.Connection) -> None:
         c2.metric("지출", _money(totals["expense"]))
         c3.metric("잔액", _money(totals["balance"]))
         if (df["amount"] < 0).any():
-            st.plotly_chart(stats.category_pie(df), use_container_width=True)
-            st.plotly_chart(stats.monthly_line(df), use_container_width=True)
+            st.plotly_chart(stats.category_pie(df), width="stretch")
+            st.plotly_chart(stats.monthly_line(df), width="stretch")
             st.subheader("카테고리별 지출")
-            st.dataframe(stats.by_category(df), use_container_width=True, hide_index=True)
+            st.dataframe(stats.by_category(df), width="stretch", hide_index=True)
         else:
             st.info("아직 지출 내역이 없습니다.")
 
