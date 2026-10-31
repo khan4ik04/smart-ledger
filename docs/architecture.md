@@ -37,19 +37,21 @@
 - `delete_transaction(conn, tx_id) -> bool`
 - `set_budget(conn, category, month, amount)` / `get_budgets(conn, month) -> dict[str, int]`
 
-### `app.importer` — 데이터 처리
+### `app.importer` — 데이터 처리 ✅ 구현됨
 - `loader.load_file(source, filename=None) -> DataFrame` (date, description, amount, memo)
-- `loader.remove_duplicates(new, existing) -> DataFrame`
-- `categorizer.load_rules(path) -> dict[str, list[str]]` ✅
+- `loader.remove_duplicates(new, existing) -> DataFrame` (date·description·amount가 같으면 중복. 같은 파일 안의 동일 거래도 1건으로 합쳐짐)
+- `categorizer.load_rules(path) -> dict[str, list[str]]` (파일이 없으면 `{}`)
+- `categorizer.save_rules(rules, path) -> None`
+- `categorizer.add_rule(category, keyword, path) -> dict[str, list[str]]`
 - `categorizer.categorize(description, rules) -> str`
 - `categorizer.categorize_frame(df, rules) -> DataFrame`
 
-### `app.analytics` — 분석·시각화
+### `app.analytics` — 분석·시각화 (stats ✅, budget ⬜)
 - `stats.summary(df) -> {"income", "expense", "balance"}`
 - `stats.by_category(df) -> DataFrame(category, total, ratio)`
 - `stats.by_month(df) -> DataFrame(month, income, expense)`
 - `stats.category_pie(df)`, `stats.monthly_line(df) -> plotly Figure`
 - `budget.check_budgets(df, budgets) -> list[BudgetStatus]`
 
-### `app.ui` — UI
+### `app.ui` — UI ✅ 구현됨 (예산 화면 제외)
 - `pages.*(conn)` 화면 함수. 미구현 모듈은 `NotImplementedError` → "준비 중" 표시.

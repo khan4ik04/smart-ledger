@@ -10,9 +10,9 @@ pip install -r requirements-dev.txt
 ## 작업 순서
 
 1. **이슈 확인** — 할 일은 모두 이슈로 등록합니다. 본인을 Assignee로 지정하세요.
-2. **브랜치 생성** — `main`에서 새 브랜치를 만듭니다.
+2. **브랜치 생성** — `dev`에서 새 브랜치를 만듭니다.
    ```bash
-   git switch main && git pull
+   git switch dev && git pull
    git switch -c feature/csv-import     # 버그면 fix/..., 문서면 docs/...
    ```
 3. **작업 + 테스트** — 새 함수에는 `tests/`에 테스트를 추가합니다.
@@ -27,12 +27,13 @@ pip install -r requirements-dev.txt
    test: categorizer 테스트 추가
    refactor: / chore:
    ```
-5. **PR 생성** — 본문에 `Closes #이슈번호`. 팀원 1명 이상 승인 + CI 통과 후 **Squash and merge**.
+5. **PR 생성** — 대상 브랜치는 `dev`. 본문에 `Closes #이슈번호`. 팀원 1명 이상 승인 + CI 통과 후 **Squash and merge**.
 6. 리뷰 요청을 받으면 **48시간 이내**에 리뷰합니다.
 
 ## 규칙
 
-- `main`에 직접 push 하지 않습니다.
+- 모든 작업은 `dev`로 PR을 보냅니다. `dev`에 직접 push 하지 않습니다.
+- `main`은 최종 완성본 전용입니다. 프로젝트가 끝났을 때 **팀장만** `dev`의 최종 버전을 `main`에 반영합니다. 팀원은 `main`에 push·PR 하지 않습니다.
 - 기여도 확인을 위해 **반드시 본인 GitHub 계정**으로 커밋합니다.
   ```bash
   git config user.name "본인 GitHub 아이디"
