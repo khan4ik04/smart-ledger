@@ -7,22 +7,13 @@ import pytest
 from app.db import database as dbm
 
 
-@pytest.fixture
-def conn():
-    connection = dbm.connect(":memory:")
-    yield connection
-    connection.close()
-
-
 def test_add_transactions_empty_dataframe_returns_zero(conn):
     assert dbm.add_transactions(conn, pd.DataFrame()) == 0
     assert dbm.get_transactions(conn).empty
 
 
 def test_add_transactions_uses_default_category_and_memo(conn):
-    df = pd.DataFrame(
-        [{"date": "2026-10-01", "description": "스타벅스", "amount": -4500}]
-    )
+    df = pd.DataFrame([{"date": "2026-10-01", "description": "스타벅스", "amount": -4500}])
     assert dbm.add_transactions(conn, df) == 1
 
     row = dbm.get_transactions(conn).iloc[0]

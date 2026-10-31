@@ -163,7 +163,5 @@ def set_budget(conn: sqlite3.Connection, category: str, month: str, amount: int)
 
 def get_budgets(conn: sqlite3.Connection, month: str) -> dict[str, int]:
     """해당 월의 {카테고리: 예산} 사전을 반환한다."""
-    rows = conn.execute(
-        "SELECT category, amount FROM budgets WHERE month = ?", (month,)
-    ).fetchall()
+    rows = conn.execute("SELECT category, amount FROM budgets WHERE month = ?", (month,)).fetchall()
     return {r["category"]: r["amount"] for r in rows}
