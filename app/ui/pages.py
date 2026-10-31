@@ -15,7 +15,6 @@ import streamlit as st
 
 from app import db
 
-
 # Visual layer only. All calculations and database operations remain unchanged.
 _THEME_CSS = """
 <style>
@@ -144,7 +143,9 @@ button[kind="primary"]:hover {
 def _page_style() -> None:
     """Apply global visual tweaks without touching backend/business logic."""
     st.markdown(_THEME_CSS, unsafe_allow_html=True)
-    st.markdown('<div class="sl-eyebrow">SMART LEDGER / PERSONAL FINANCE</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="sl-eyebrow">SMART LEDGER / PERSONAL FINANCE</div>', unsafe_allow_html=True
+    )
 
 
 def _not_ready(name: str) -> None:
@@ -281,7 +282,8 @@ def _edit_or_delete(conn: sqlite3.Connection, frame: pd.DataFrame) -> None:
         with st.form(f"edit_tx_{tx_id}"):
             new_date = st.date_input("날짜", value=dt.date.fromisoformat(str(selected["date"])))
             new_kind = st.radio(
-                "구분", ["지출", "수입"],
+                "구분",
+                ["지출", "수입"],
                 index=0 if kind == "지출" else 1,
                 horizontal=True,
             )
@@ -303,8 +305,12 @@ def _edit_or_delete(conn: sqlite3.Connection, frame: pd.DataFrame) -> None:
                     st.error(str(exc))
                 else:
                     db.update_transaction(
-                        conn, tx_id, date=new_date.isoformat(), description=new_desc.strip(),
-                        amount=signed, category=new_category.strip() or "미분류",
+                        conn,
+                        tx_id,
+                        date=new_date.isoformat(),
+                        description=new_desc.strip(),
+                        amount=signed,
+                        category=new_category.strip() or "미분류",
                         memo=new_memo.strip(),
                     )
                     st.session_state["ui_notice"] = "거래가 수정되었습니다."
