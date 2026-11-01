@@ -1,18 +1,14 @@
-
 """가맹점명 키워드 기반 자동 카테고리 분류."""
 
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pandas as pd
 
-DEFAULT_RULES_PATH = (
-    Path(__file__).resolve().parents[2]
-    / "data"
-    / "category_rules.json"
-)
+DEFAULT_RULES_PATH = Path(__file__).resolve().parents[2] / "data" / "category_rules.json"
 
 UNCATEGORIZED = "미분류"
 
@@ -64,9 +60,7 @@ def add_rule(
 
     normalized = keyword.casefold()
 
-    existing = [
-        item.casefold() for item in rules[category]
-    ]
+    existing = [item.casefold() for item in rules[category]]
 
     if normalized not in existing:
         rules[category].append(keyword)
@@ -79,20 +73,34 @@ def add_rule(
 def categorize(
     description: str,
     rules: dict[str, list[str]],
+    amount: int | float | None = None,
 ) -> str:
-    """거래 설명에 포함된 키워드로 카테고리를 정한다."""
+    """거래 설명과 금액 부호를 기준으로 카테고리를 정한다."""
 
-    description = "".join(
-        str(description).casefold().split()
-    )
+    description = " ".join(str(description).casefold().split())
 
     for category, keywords in rules.items():
-        for keyword in keywords:
-            keyword = "".join(
-                str(keyword).casefold().split()
-            )
+        if amount is not None:
+            if category == "수입" and amount <= 0:
+                continue
+            if category != "수입" and amount >= 0:
+                continue
 
-            if keyword and keyword in description:
+        for keyword in keywords:
+            keyword = " ".join(str(keyword).casefold().split())
+
+            if not keyword:
+                continue
+
+            if keyword.isascii() and keyword.isalnum():
+                pattern = rf"(?<![a-z0-9]){re.escape(keyword)}(?![a-z0-9])"
+                matched = re.search(pattern, description) is not None
+            elif keyword == "이자":
+                matched = re.search(r"이자(?![가-힣])", description) is not None
+            else:
+                matched = keyword.replace(" ", "") in description.replace(" ", "")
+
+            if matched:
                 return category
 
     return UNCATEGORIZED
@@ -109,8 +117,12 @@ def categorize_frame(
 
     result = df.copy()
 
-    result["category"] = result["description"].apply(
-        lambda x: categorize(x, rules)
-    )
+    if "amount" in result.columns:
+        result["category"] = result.apply(
+            lambda row: categorize(row["description"], rules, row["amount"]),
+            axis=1,
+        )
+    else:
+        result["category"] = result["description"].apply(lambda value: categorize(value, rules))
 
     return result

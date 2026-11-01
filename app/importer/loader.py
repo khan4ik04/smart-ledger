@@ -1,8 +1,8 @@
-
 """은행 거래 내역 파일 가져오기."""
 
 from __future__ import annotations
 
+from collections import Counter
 from pathlib import Path
 from typing import BinaryIO
 
@@ -58,9 +58,7 @@ def _clean_amount(value) -> int:
 
     text = str(value).strip()
 
-    negative = text.startswith("-") or (
-        text.startswith("(") and text.endswith(")")
-    )
+    negative = text.startswith(("-", "−")) or (text.startswith("(") and text.endswith(")"))
 
     text = (
         text.replace(",", "")
@@ -69,6 +67,7 @@ def _clean_amount(value) -> int:
         .replace(" ", "")
         .replace("+", "")
         .replace("-", "")
+        .replace("−", "")
         .replace("(", "")
         .replace(")", "")
     )
@@ -84,10 +83,7 @@ def _find_column(
 ) -> str | None:
     """컬럼 이름을 비교하여 해당 컬럼을 찾는다."""
 
-    normalized = {
-        str(col).strip().casefold(): col
-        for col in df.columns
-    }
+    normalized = {str(col).strip().casefold(): col for col in df.columns}
 
     for name in names:
         if name.casefold() in normalized:
@@ -107,9 +103,7 @@ def load_file(
     elif isinstance(source, (str, Path)):
         extension = Path(source).suffix.lower()
     else:
-        extension = Path(
-            getattr(source, "name", "")
-        ).suffix.lower()
+        extension = Path(getattr(source, "name", "")).suffix.lower()
 
     if extension == ".csv":
         try:
@@ -126,13 +120,11 @@ def load_file(
                 encoding="cp949",
             )
 
-    elif extension in [".xlsx", ".xls"]:
+    elif extension == ".xlsx":
         df = pd.read_excel(source)
 
     else:
-        raise ValueError(
-            "CSV 또는 Excel 파일만 지원합니다."
-        )
+        raise ValueError("CSV 또는 XLSX 파일만 지원합니다.")
 
     date_col = _find_column(
         df,
@@ -145,9 +137,7 @@ def load_file(
     )
 
     if date_col is None or description_col is None:
-        raise ValueError(
-            "날짜 또는 거래내용 컬럼을 찾을 수 없습니다."
-        )
+        raise ValueError("날짜 또는 거래내용 컬럼을 찾을 수 없습니다.")
 
     amount_col = _find_column(
         df,
@@ -168,49 +158,43 @@ def load_file(
         amount = df[amount_col].apply(_clean_amount)
 
     elif deposit_col is not None or withdrawal_col is not None:
-        deposit = (
-            df[deposit_col].apply(_clean_amount)
-            if deposit_col is not None
-            else 0
-        )
+        deposit = df[deposit_col].apply(_clean_amount) if deposit_col is not None else 0
 
         withdrawal = (
-            df[withdrawal_col].apply(_clean_amount).abs()
-            if withdrawal_col is not None
-            else 0
+            df[withdrawal_col].apply(_clean_amount).abs() if withdrawal_col is not None else 0
         )
 
         amount = deposit - withdrawal
 
     else:
-        raise ValueError(
-            "금액 컬럼을 찾을 수 없습니다."
-        )
+        raise ValueError("금액 컬럼을 찾을 수 없습니다.")
 
     memo_col = _find_column(
         df,
         COLUMN_ALIASES["memo"],
     )
 
-    result = pd.DataFrame({
-        "date": pd.to_datetime(
-            df[date_col],
-            errors="coerce",
-        ).dt.strftime("%Y-%m-%d"),
-        "description": (
-            df[description_col]
-            .fillna("")
-            .astype(str)
-            .str.strip()
-        ),
-        "amount": amount,
-    })
-
-    result["memo"] = (
-        df[memo_col].fillna("").astype(str)
-        if memo_col is not None
-        else ""
+    dates = pd.to_datetime(
+        df[date_col],
+        errors="coerce",
+        format="mixed",
     )
+    descriptions = df[description_col].fillna("").astype(str).str.strip()
+
+    invalid_dates = dates.isna() & descriptions.ne("")
+    if invalid_dates.any():
+        row_numbers = [str(index + 2) for index in df.index[invalid_dates]]
+        raise ValueError("날짜를 읽을 수 없는 행이 있습니다: " + ", ".join(row_numbers))
+
+    result = pd.DataFrame(
+        {
+            "date": dates.dt.strftime("%Y-%m-%d"),
+            "description": descriptions,
+            "amount": amount,
+        }
+    )
+
+    result["memo"] = df[memo_col].fillna("").astype(str) if memo_col is not None else ""
 
     result = result.dropna(subset=["date"])
     result = result[result["description"] != ""]
@@ -229,19 +213,12 @@ def remove_duplicates(
 
     result = new.copy()
 
-    result = result.drop_duplicates(
-        subset=REQUIRED_COLUMNS
-    )
-
     if existing is not None and not existing.empty:
-        existing_keys = set(
+        existing_keys = list(
             zip(
                 existing["date"].astype(str),
                 existing["description"].astype(str),
-                pd.to_numeric(
-                    existing["amount"],
-                    errors="coerce",
-                ).fillna(0),
+                pd.to_numeric(existing["amount"], errors="coerce").fillna(0),
                 strict=True,
             )
         )
@@ -258,11 +235,13 @@ def remove_duplicates(
             )
         )
 
-        result = result.loc[
-            [
-                key not in existing_keys
-                for key in new_keys
-            ]
-        ]
+        existing_counts = Counter(existing_keys)
+        seen_counts = Counter()
+        keep = []
+        for key in new_keys:
+            seen_counts[key] += 1
+            keep.append(seen_counts[key] > existing_counts[key])
+
+        result = result.loc[keep]
 
     return result.reset_index(drop=True)
