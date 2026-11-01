@@ -441,5 +441,6 @@ def statistics(conn: sqlite3.Connection) -> None:
 
 def budgets(conn: sqlite3.Connection) -> None:
     _page_style()
-    st.title("🎯 예산 설정")
-    _not_ready("예산 설정")
+    from app.ui.budget_page import render_budget_page
+
+    render_budget_page(conn)
